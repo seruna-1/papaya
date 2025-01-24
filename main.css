@@ -1,0 +1,268 @@
+@font-face
+{
+	font-family: "Inconsolata";
+	src:
+		url("inconsolata/Inconsolata-Regular.woff2") format("woff2");
+}
+
+:root, ::backdrop
+{
+	--content-space-width: min(100vw, 100vh);
+
+	--empty-space-width: calc( 100vw - var(--content-space-width) );
+
+	--main-font: "Inconsolata";
+
+	--border-width: 0.1rem;
+
+	--color-background-1: #212121;
+
+	--color-background-2: #2b2b2b;
+
+	--color-background-interactive: #ffb30029;
+
+	--color-text-normal: #dcdcdc;
+
+	--color-text-marked: #14bb00;
+
+	--color-text-shadowed: grey;
+
+	--color-clickable-normal: #ffb300;
+
+	--color-clickable-selected: #ffcd5b;
+
+	--color-border: #54545494;
+
+	--color-border-hover: #bdbdbd;
+}
+
+html
+{
+	scroll-behavior: smooth;
+}
+
+html, body, :modal
+{
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	color: var(--color-text-normal);
+	background-color: var(--color-background-1);
+	font-family: var(--main-font);
+	font-size: 1.05rem;
+}
+
+header
+{
+	background-color: var(--color-background-2);
+	border-color: var(--color-border);
+	border-bottom-style: solid;
+	border-bottom-width: var(--border-width);
+	text-align: center;
+}
+
+main, header, body > nav
+{
+	padding-right: calc( var(--empty-space-width) / 2 + 0.6rem );
+	padding-left: calc( var(--empty-space-width) / 2 + 0.6rem );
+	padding-top: 2rem;
+	padding-bottom: 2rem;
+}
+
+ul
+{
+	margin-left: 1rem;
+	border-left-style: solid;
+	border-left-width: var(--border-width);
+	border-left-color: var(--color-border);
+}
+
+figure, div
+{
+	padding: 1rem;
+	margin-right: 1rem;
+	margin-left: 1rem;
+	height: auto;
+	border-style: solid;
+	border-width: var(--border-width);
+	border-color: var(--color-border);
+}
+
+section
+{
+	padding-left: 0.8rem;
+	border-left-style: solid;
+	border-left-width: 0.2rem;
+	border-left-color: var(--color-border);
+}
+
+div
+{
+	overflow-x: auto;
+	overflow-y: hidden;
+	text-wrap: nowrap;
+}
+
+div div
+{
+	border-style: unset;
+	border-left-style: solid;
+	border-left-width: var(--border-width);
+	border-left-color: var(--color-border);
+}
+
+div:not( .line-break ) *
+{
+	width: fit-content;
+}
+
+div.line-break
+{
+	text-wrap: auto;
+}
+
+body, main, figure, div, section, p, h1
+{
+	box-sizing: border-box;
+}
+
+img, video
+{
+	width: 100%;
+	opacity: 0.8;
+	display: block;
+}
+
+mark, code, kbd, blockquote > *
+{
+	color: var(--color-text-marked);
+	background-color: unset;
+}
+
+figcaption
+{
+	color: var(--color-text-shadowed);
+}
+
+a, button.link-to-section
+{
+	font-family: inherit;
+	font-style: inherit;
+	font-size: inherit;
+	color: var(--color-clickable-normal);
+	background-color: unset;
+	border: unset;
+	text-decoration: none;
+}
+
+a:hover
+{
+	color: var(--color-clickable-selected);
+}
+
+div:not(:has(div:hover)):hover
+{
+	border-color: var(--color-border-hover);
+	background-color: var(--color-background-2);
+}
+
+section:not(:has(section:hover)):hover, ul:not(:has(ul:hover)):hover
+{
+	border-color: var(--color-border-hover);
+}
+
+button:enabled:hover, input[type="submit"]:enabled:hover, input[type="reset"]:enabled:hover, input[type="button"]:enabled:hover
+{
+	background-color: var(--color-clickable-selected);
+}
+
+hr
+{
+	color: var(--color-border);
+}
+
+h1, h2, h3, h4, h5, h6, p:not( div > p )
+{
+	overflow-x: auto;
+	line-height: 1.4em;
+	margin-top: 0;
+}
+
+div.line-break > p
+{
+	overflow-x: auto;
+}
+
+h1, h2, h3, h4, h5, h6
+{
+	font-size: 1.4rem;
+	font-weight: bold;
+	margin: 0;
+}
+
+section:not( :first-child )
+{
+	margin-top: 3rem;
+}
+
+section > h1, section > h2, section > h3, section > h4, section > h5, section > h6
+{
+	margin-bottom: 1.5em;
+}
+
+p:not( :last-child ),
+div:not( :last-child ),
+li:not( :last-child ),
+ul:not( :last-child )
+{
+	margin-bottom: 2em;
+}
+
+p:last-child
+{
+	margin-bottom: 0;
+}
+
+:first-child
+{
+	margin-top: 0;
+}
+
+input[type="submit"], input[type="reset"], input[type="button"]
+{
+	font-size: 1rem;
+	margin: 1rem;
+	padding: 0.5rem;
+	border-width: 0px;
+	background-color: var(--color-clickable-normal);
+	color: var(--color-background-1);
+	text-decoration: none;
+}
+
+#buttonShowDialogMain
+{
+	position: fixed;
+	bottom: 0px;
+	left: 0px;
+}
+
+#buttonGoTop
+{
+	position: fixed;
+	bottom: 0px;
+	right: 0px;
+}
+
+#viewSelectors
+{
+	margin-bottom: 2.5rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+input.viewSelector
+{
+	font-weight: bold;
+	margin: 0;
+}

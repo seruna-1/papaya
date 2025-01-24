@@ -1,0 +1,87 @@
+#! /usr/bin/ruby
+
+require "rexml"
+
+require "json"
+
+if ( ARGV.size < 1 )
+
+	puts( "Error. Too few command line arguments. Must have at least path to [translations.json]." );
+
+	Kernel.abort()
+
+end
+
+for arg in ARGV
+
+	if ( arg[0] != '/' )
+
+		puts( "Error. Please, provide only absolute paths." );
+
+		Kernel.abort()
+
+	end
+
+end
+
+translations = JSON.parse( File.read( ARGV[0] ) )
+
+top_dir = File.dirname( ARGV[0] )
+
+if ( ARGV.size == 2 )
+
+	paths << ARGV[1]
+
+else
+
+	puts( "TODO." )
+
+	Kernel.abort()
+
+end
+
+for absolute_path in paths
+
+	path = absolute_path.delete_prefix( top_dir + "/" )
+
+	distance_to_top = path.count( "/" )
+
+	dom = REXML::Document.new( File.read( absolute_path ) )
+
+	dialog = REXML::XPath.first( dom.root, "//dialog[@name=\"translations\"]" )
+
+	puts( dialog.inspect() )
+
+	if ( dialog == nil )
+
+		htmlBody = REXML::XPath.first( dom.root, "//body" )
+
+		dialog = htmlBody.add_element( "dialog", { "name" => "translations" } )
+
+	end
+
+	dom.root.elements.delete_all( "//dialog[@name=\"translations\"]/*" )
+
+	for group in translations
+
+		if group.include?( path )
+
+			for translation in group
+
+				if translation != path
+
+					prefix = "../" * distance_to_top
+
+					dialog.add_element( "a", { "href" => prefix + translation } )
+
+				end
+
+			end
+
+		end
+
+	end
+
+	dom.write( { indent: 1 } )
+
+end
