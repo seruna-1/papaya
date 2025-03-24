@@ -6,23 +6,47 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-class Builder:
+class FileBuilder :
 
-	def __init__ ( self, source_root, source_format, destination_root, kaki_relative_path ) :
+	def __init__ ( self, documentation_builder ) :
 
-		self.source_root = Path( source_root )
+		self.documentation_builder = documentation_builder
 
-		self.destination_root = Path( destination_root )
+		print( self.documentation_builder.source )
 
-		self.source_format = source_format
+		self.source = None
 
-		self.kaki_relative_path_from_top = Path( kaki_relative_path )
+		self.source_format = self.documentation_builder.source_format
 
-		match self.source_format:
+		self.destination = None
 
-			case 'html' : self.relevant_file_extension = '.html'
+		self.kaki_expected_path = None
 
-			case 'markdown' : self.relevant_file_extension = '.md'
+		return
+
+	def set_source ( self, path ) :
+
+		self.source = path
+
+		source_from_root = self.source.relative_to( self.documentation_builder.source )
+
+		self.destination = self.documentation_builder.destination / source_from_root.with_suffix( ".html" )
+
+		self.idiom = source_from_root.parents[-2]
+
+		documentation_destination_from_file_destination = self.documentation_builder.destination.relative_to( self.destination.parent, walk_up=True )
+
+		self.kaki_expected_path = documentation_destination_from_file_destination / self.documentation_builder.kaki_expected_path_from_destination
+
+		return
+
+	def set_source_extension ( self ) :
+
+		match self.documentation_builder.source_format:
+
+			case 'html' : self.source_file_extension = '.html'
+
+			case 'markdown' : self.source_file_extension = '.md'
 
 			case _ : raise Exception( "Not a valid source format." )
 
@@ -30,63 +54,43 @@ class Builder:
 
 	def build ( self ) :
 
-		model_path = Path( __file__ ).parent / 'model.html'
+		document = BeautifulSoup( self.documentation_builder.model_text, 'html.parser' )
 
-		model_text = model_path.read_text()
+		part = self.source.read_text()
 
-		for source_directory_path, source_directory_names, source_file_names in self.source_root.walk() :
+		if self.source_format == 'markdown' :
 
-			parent_was_relocated = False
+			part = markdown.markdown( part )
 
-			for source_file_name in source_file_names :
+		part = BeautifulSoup( part, 'html.parser' )
 
-				if source_file_name.endswith( self.relevant_file_extension ) :
+		insert_point = document.find( 'main' )
 
-					source_file_path = source_directory_path / source_file_name
+		for child in part.children : insert_point.append( child.extract() )
 
-					destination_file_path = self.destination_root / source_file_path.relative_to( self.source_root ).with_suffix( ".html" )
+		given_titles = document.select( 'main title' )
 
-					self.kaki_relative_path = self.destination_root.relative_to( destination_file_path.parent, walk_up=True ) / self.kaki_relative_path_from_top
+		if ( given_titles != [] ) :
 
-					if parent_was_relocated == False : destination_file_path.parent.mkdir( parents=True, exist_ok=True ) ; parent_was_relocated = True
+			assert ( len( given_titles ) == 1 ) , 'More than one title in part.'
 
-					text = source_file_path.read_text()
+			document.html.head.title.replace_with( given_titles[0] )
 
-					if self.source_format == 'markdown' :
+		self.build_language_information( document )
 
-						text = markdown.markdown( text )
+		self.build_references_to_kaki( document )
 
-					model = BeautifulSoup( model_text, 'html.parser' )
-
-					built = self.build_from_html( text, model )
-
-					destination_file_path.write_text( built )
+		self.destination.write_text( document.prettify() )
 
 		return
 
-	def build_from_html ( self, text, model ) :
+	def build_references_to_kaki ( self, document ) :
 
-		text = '<main>' + text + '</main>'
+		kaki_css_path = self.kaki_expected_path / 'main.css'
 
-		model.find( 'main' ).replace_with( BeautifulSoup( text, 'html.parser' ).main )
+		kaki_javascript_path = self.kaki_expected_path / 'main.js'
 
-		result = model
-
-		given_titles = result.select( 'main title' )
-
-		if given_titles != [] : result.html.head.title.replace_with( given_titles[0] )
-
-		result = self.generate_references_to_kaki( result )
-
-		return result.prettify()
-
-	def generate_references_to_kaki ( self, soup ) :
-
-		kaki_css_path = self.kaki_relative_path / 'main.css'
-
-		kaki_javascript_path = self.kaki_relative_path / 'main.js'
-
-		elements_link_stylesheet = soup.head.find_all( 'link', rel='stylesheet' )
+		elements_link_stylesheet = document.head.find_all( 'link', rel='stylesheet' )
 
 		assert ( elements_link_stylesheet != None ) , "Could not find any element [link] with attribute [rel] set to [stylesheet]."
 
@@ -94,9 +98,9 @@ class Builder:
 
 			refers_to_kaki = 'kaki' in element['href']
 
-			if refers_to_kaki == True : element['href'] = str( kaki_css_path ) ; break
+			if refers_to_kaki : element['href'] = str( kaki_css_path ) ; break
 
-		elements_script = soup.find_all( 'script' )
+		elements_script = document.find_all( 'script' )
 
 		assert ( elements_script != None ) , "Could not find any element [script]."
 
@@ -104,29 +108,83 @@ class Builder:
 
 			refers_to_kaki = ( 'src' in element_script.attrs ) and ( 'kaki' in element_script['src'] )
 
-			if  refers_to_kaki == True : element_script['src'] = str( kaki_javascript_path ) ; break
+			if refers_to_kaki : element_script['src'] = str( kaki_javascript_path ) ; break
 
-		return soup
+		return
+
+	def build_language_information ( self, document ) :
+
+		for element in document.head.find_all( 'meta' ) :
+
+			if 'lang' in element.attrs : element['lang'] = str( self.idiom ) ; break
+
+		return
+
+class DocumentationBuilder :
+
+	def __init__ ( self, options ) :
+
+		options = options.__dict__
+
+		valid_options = [
+			'source',
+			'source_format',
+			'destination',
+			'kaki_expected_path_from_destination'
+		]
+
+		for name in options :
+
+			if name in valid_options : setattr( self, name, options[name] )
+
+		paths_to_resolve = [ self.source, self.destination ]
+
+		for path in paths_to_resolve : path = path.resolve()
+
+		self.model_path = Path( __file__ ).parent / 'model.html'
+
+		self.model_text = self.model_path.read_text()
+
+		self.file_builder = FileBuilder( **{ 'documentation_builder' : self } )
+
+		self.file_builder.set_source_extension()
+
+		return
+
+	def build ( self ) :
+
+		for source_directory_path, source_directory_names, source_file_names in self.source.walk() :
+
+			parent_was_relocated = False
+
+			for source_file_name in source_file_names :
+
+				if not source_file_name.endswith( self.file_builder.source_file_extension ) : next
+
+				self.file_builder.set_source( **{
+					'path' : source_directory_path / source_file_name
+				} )
+
+				if not parent_was_relocated : self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True ) ; parent_was_relocated = True
+
+				self.file_builder.build()
+
+		return
 
 if __name__ == '__main__':
 
 	option_parser = argparse.ArgumentParser()
 
-	option_parser.add_argument( "--source", required=True )
+	option_parser.add_argument( "--source", dest='source', required=True, type=Path )
 
 	option_parser.add_argument( "--source-format", dest='source_format', required=True )
 
-	option_parser.add_argument( "--destination", required=True )
+	option_parser.add_argument( "--destination", dest='destination', required=True, type=Path )
 
-	option_parser.add_argument( "--kaki", default="./kaki" )
+	option_parser.add_argument( "--kaki", dest='kaki_expected_path_from_destination', default="kaki", type=Path )
 
 	options = option_parser.parse_args()
 
-	builder = Builder(
-		source_root=options.source,
-		source_format=options.source_format,
-		destination_root=options.destination,
-		kaki_relative_path=options.kaki
-	)
+	builder = DocumentationBuilder( options )
 
 	builder.build()
