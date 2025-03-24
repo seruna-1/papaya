@@ -2,29 +2,17 @@
 
 [Kaki] is a small toolkit to build and render static HTML pages. It can be used, for example, in a personal website or a documentation of a project.
 
-Documentation source of [kaki] is avaiable in 2 formats: HTML, inside [documentation/html]; and markdown, inside [documentation/markdown]. Any of them can be built using the script [tools/build-documentation]. From inside the repository directory:
+Source files can be [HTML] or [markdown]. The documentation of [kaki] uses both. It can be built using the script [tools/build-documentation.py]. From inside the repository directory:
 
 ```
-python ./tools/build-documentation.py --source=./documentation/html --source-format=html --destination=./built/documentation/html-kaki
+python ./tools/build-documentation.py --source=./documentation --destination=./built/documentation/html-kaki
 ```
 
-or
-
-```
-python ./tools/build-documentation.py --source-format=markdown --source=./documentation/markdown --destination=./built/documentation/html-kaki
-```
-
-respectively.
-
-The documentation will be built to directory [built/documentation/html-kaki]. A release of [kaki] will be expected to be there. To generate it, the script [tools/build-documentation] is used:
+The documentation will be built to directory [built/documentation/html-kaki]. A release of [kaki] will be expected to be there. To generate it, the script [tools/build-kaki.py] is used:
 
 ```
 python ./tools/build-kaki.py --repository=./ --destination=./built/documentation/html-kaki/kaki
 ```
-
-Here is a screenshot of a built page that uses [kaki] [built/documentation/html-kaki/pt-BR/index.html]:
-
-![](screenshot.png)
 
 # General directory tree layout
 

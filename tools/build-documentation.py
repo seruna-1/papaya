@@ -16,7 +16,7 @@ class FileBuilder :
 
 		self.source = None
 
-		self.source_format = self.documentation_builder.source_format
+		self.valid_source_suffixes = [ '.md', '.html' ]
 
 		self.destination = None
 
@@ -40,27 +40,13 @@ class FileBuilder :
 
 		return
 
-	def set_source_extension ( self ) :
-
-		match self.documentation_builder.source_format:
-
-			case 'html' : self.source_file_extension = '.html'
-
-			case 'markdown' : self.source_file_extension = '.md'
-
-			case _ : raise Exception( "Not a valid source format." )
-
-		return
-
 	def build ( self ) :
 
 		document = BeautifulSoup( self.documentation_builder.model_text, 'html.parser' )
 
 		part = self.source.read_text()
 
-		if self.source_format == 'markdown' :
-
-			part = markdown.markdown( part )
+		if self.source.suffix == '.md' : part = markdown.markdown( part )
 
 		part = BeautifulSoup( part, 'html.parser' )
 
@@ -128,7 +114,6 @@ class DocumentationBuilder :
 
 		valid_options = [
 			'source',
-			'source_format',
 			'destination',
 			'kaki_expected_path_from_destination'
 		]
@@ -147,8 +132,6 @@ class DocumentationBuilder :
 
 		self.file_builder = FileBuilder( **{ 'documentation_builder' : self } )
 
-		self.file_builder.set_source_extension()
-
 		return
 
 	def build ( self ) :
@@ -159,10 +142,12 @@ class DocumentationBuilder :
 
 			for source_file_name in source_file_names :
 
-				if not source_file_name.endswith( self.file_builder.source_file_extension ) : next
+				source_file_path = source_directory_path / source_file_name
+
+				if not source_file_path.suffix in self.file_builder.valid_source_suffixes : next
 
 				self.file_builder.set_source( **{
-					'path' : source_directory_path / source_file_name
+					'path' : source_file_path
 				} )
 
 				if not parent_was_relocated : self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True ) ; parent_was_relocated = True
@@ -176,8 +161,6 @@ if __name__ == '__main__':
 	option_parser = argparse.ArgumentParser()
 
 	option_parser.add_argument( "--source", dest='source', required=True, type=Path )
-
-	option_parser.add_argument( "--source-format", dest='source_format', required=True )
 
 	option_parser.add_argument( "--destination", dest='destination', required=True, type=Path )
 
