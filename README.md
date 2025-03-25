@@ -1,8 +1,15 @@
 # kaki
 
-[Kaki] is a small toolkit to build and render static HTML pages. It can be used, for example, in a personal website or a documentation of a project.
+[Kaki] is a small toolkit to build and render static HTML pages. It can be 
+used, for example, in a personal website or a documentation of a project.
 
-Source files can be [HTML] or [markdown]. The documentation of [kaki] uses both. It can be built using the script [tools/build-documentation.py]. From inside the repository directory:
+Source files can be [HTML] or [markdown]. The documentation of [kaki] uses both. It can be built using the script [tools/build-documentation.py]. But, before executing it, markdown files in the root of the repository, including this one, as well as their media, shall be included in documentation. From inside the repository directory:
+
+```
+python ./tools/include-missing-documentation.py
+```
+
+Now, to build the documentation:
 
 ```
 python ./tools/build-documentation.py --source=./documentation --destination=./built/documentation/html-kaki

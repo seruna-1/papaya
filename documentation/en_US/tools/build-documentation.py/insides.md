@@ -1,26 +1,26 @@
 <title> Insides </title>
 
-# Class Builder
+# Class DocumentationBuilder
 
-Responsible for building the documentation. As input, constructor takes a namespace and recreate supported names in [self]. Supported names are:
+Responsible for building the documentation. The building process of each individual file is carried by another class: [FileBuilder].
 
- - [source_root], path to the directory that acomodates source files.
+An instance of [FileBuilder] is created at the end of method [DocumentationBuilder.__init__], as [self.file_builder].
 
- - [source-format], that specifies the format of the source files.
+As input, [DocumentationBuilder.__init__] takes a [argparse.Namespace] named [options] and treats it as a dictionary. Supported keys in it are recreated in [self], as properties. They are:
 
- - [destination_root], path to the directory that will acomodate generated files.
+ - [source], path to the directory that acomodates source files.
 
- - [kaki_expected_path_from_destination_root], the expected path to [kaki] from [destination_root]. That will be used as base to insert paths to kaki files in each destination HTML file. This consists in prefixing as many [../] to [kaki_expected_path_from_destination_root] as needed to reach [kaki]. The deeper a destination file is inside destination root, the more [../] will be prefixed. The resulting path, with needed corrections to be valid, if any, is stored as property [kaki_expected_path_from_destination_file], updated for each file being built.
+ - [destination], path to the directory that will acomodate generated files.
 
-Properties [source_root] and [destination_root] are resolved.
+ - [kaki_from_destination], the expected path to [kaki] from [self.destination]. That will be used by instance of [FileBuilder], when method [FileBuilder.set_source] is called, to define the path from the source to [kaki]. This involves prefixing as many [../] to [kaki_from_destination] as needed for the current file to reach the root, and then reach [kaki].
 
-Property [model_path]
+ - [selection_to_build]. A path to a json file consisting of a list of files to be built. Can be [None]. If not [None], the file will be parsed into an pythonic list. If this list is empty, an error will be throwed. Otherwise, only the files specified by the paths in that list will be built. The list is stored in property [self.selection_to_build].
 
-From each source file, will be generated a destination file at the same relative path from [source_root], except that the file type extension may change, like from ".md" suffix in the source file to ".html" suffix in generated file.
+Properties [self.source] and [self.destination] are resolved.
 
-Property [source_file_path] is an object [pathlib.Path], the path to the current source file being built. Its relative to [source_root].
+From each source file, will be generated a destination file at the same relative path from [self.source], except that the file type extension may change, like from [.md] suffix in the source file to [.html] suffix in generated file.
 
-# Method Builder.build
+## Method DocumentationBuilder.build
 
 A model HTML file is read and its text is stored.
 
@@ -34,12 +34,36 @@ If a relevant file is not an HTML file, its text is transformed to HTML format b
 
 The model HTML text is parsed and BeautifulSoup object is passed to [Builder.build_from_html]. This includes a slightly overhead, as the object is recreated from model text for each time [Builder.build_from_html] is called.
 
-# Method Builder.build_from_html
+## Method DocumentationBuilder.build_specific
 
+## Method DocumentationBuilder.build_all
 
+# Class FileBuilder
 
-A parsed format of it is created and replaces the element [main] in template. If there is a element [title] inside a element [meta] inside a element [head], it is ripped and replaces the title of the template.
+Responsible for building a single source file, defined by method [FileBuilder.set_source]. An object of this class can be reused to build many files by repeatdly calling this method for each one of them.
 
-# Method FileBuilder.set_source
+## Method FileBuilder.set_source
 
-Variable [documentation_destination_from_file_destination] can be interpreted as a sequence of [../] that leads to the directory of property [destination] inside the object [DocumentationBuilder]. That means, for a file inside that directory, the expected path to [kaki] is a path that leads to the root of destination plus the path of the root destination to [kaki].
+Takes the path to the source file to build as input named [path], and stores it as property [self.source].
+
+From [self.source], the path to the destination file is inferred and stored as [self.destination].
+
+[self.idiom] is the idiom of the source file. It is defined as:
+
+```
+self.idiom = source_from_root.parents[-2]
+```
+
+The variable [source_from_root] is the path of source file relative to the source root. The last parent of this path is [./], which is irrelevant, and the second is something like [pt_BR] or [en_US], which tells the idiom of the file, thus the [-2] index.
+
+Property [self.root_from_file] is a path that consists in a sequence of [../] that can lead to root from a file. It works for both reaching source root by source file and reaching destination root from destination file.
+
+## Method FileBuilder.build
+
+Builds the source file.
+
+## Method FileBuilder.build_title
+
+## Method FileBuilder.build_references_to_kaki
+
+## Method FileBuilder.build_language_information
