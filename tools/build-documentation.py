@@ -42,15 +42,23 @@ class FileBuilder :
 
 		self.kaki_from_file = self.root_from_file / self.documentation_builder.kaki_from_destination
 
-		for group in self.documentation_builder.translations :
+		translation_groups = self.documentation_builder.translations
 
-			if str( source_from_root ) in group :
+		self.translations = None
 
-				self.translations = group.copy()
+		for group in translation_groups :
 
-				self.translations.remove( str( source_from_root ) )
+			if ( self.translations != None ) : break
 
-				break
+			for file_path in group :
+
+				if ( source_from_root.with_suffix('') == Path( file_path ) ) :
+
+					self.translations = group.copy()
+
+					self.translations.remove( file_path )
+
+					break
 
 		return
 
@@ -150,7 +158,7 @@ class FileBuilder :
 
 				div.append( paragraph )
 
-				anchor = document.new_tag( 'a', href=str( translation_path ) )
+				anchor = document.new_tag( 'a', href=str( translation_path.with_suffix( '.html' ) ) )
 
 				anchor.string = str( translation_idiom )
 
