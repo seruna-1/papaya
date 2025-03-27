@@ -8,6 +8,99 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
+class SectionBuilder :
+
+	def __init__ ( self, root ) :
+
+		self.heading_names = [ 'h1', 'h2', 'h3', 'h4', 'h5' ]
+
+		self.root = root
+
+		self.section = None
+
+		self.element = None
+
+		self.heading_level = None
+
+		return
+
+	def build ( self ) :
+
+		self.section = None
+
+		self.element = self.root.contents[0]
+
+		next_element = None
+
+		while ( self.element != None ) :
+
+			assert ( self.element.name != 'section' ), "Document should either have no sections or have proper sections."
+
+			if ( self.element.name in self.heading_names ) : self.handle_heading()
+
+			next_element = self.element.next_sibling
+
+			if ( self.section != None ) : self.section.append( self.element.extract() )
+
+			self.element = next_element
+
+		return
+
+	def handle_heading ( self ) :
+
+		found_heading = self.element
+
+		found_heading_level = SectionBuilder.get_heading_level( found_heading.name )
+
+		if ( self.heading_level == None ) :
+
+			first_heading = found_heading
+
+			assert ( found_heading_level == 1 ) , "First heading found is not [h1]"
+
+			first_section = self.root.new_tag( 'section' )
+
+			first_heading.insert_before( first_section )
+
+			self.section = first_section
+
+			self.heading_level = 1
+
+		elif ( found_heading_level == self.heading_level ) :
+
+			new_section = self.root.new_tag( 'section' )
+
+			self.section.insert_after( new_section )
+
+			self.section = new_section
+
+		elif ( found_heading_level == ( self.heading_level + 1 ) ) :
+
+			new_section = self.root.new_tag( 'section' )
+
+			self.section.append( new_section )
+
+			self.section = new_section
+
+			self.heading_level = found_heading_level
+
+		elif ( found_heading_level == ( self.heading_level - 1 ) ) :
+
+			assert ( self.section.parent.name == 'section' )
+
+			self.section = self.section.parent
+
+			self.heading_level = found_heading_level
+
+		else : raise Exception( "What???" )
+
+		return
+
+
+	def get_heading_level ( heading_name ) :
+
+		return int( heading_name.replace( 'h', '' ) )
+
 class FileBuilder :
 
 	def __init__ ( self, documentation_builder ) :
@@ -72,6 +165,12 @@ class FileBuilder :
 
 		part = BeautifulSoup( part, 'html.parser' )
 
+		if self.source.suffix == '.md' :
+
+			section_builder = SectionBuilder( part )
+
+			section_builder.build()
+
 		insert_point = document.find( 'main' )
 
 		insert_point.append(part)
@@ -98,7 +197,7 @@ class FileBuilder :
 
 			title = given_titles[0].string
 
-			given_titles[0].decompose
+			given_titles[0].decompose()
 
 		else : title = str( self.source.stem )
 

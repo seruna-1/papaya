@@ -67,3 +67,26 @@ Builds the source file.
 ## Method FileBuilder.build_references_to_kaki
 
 ## Method FileBuilder.build_language_information
+
+# Class SectionBuilder
+
+Groups methods that form sections in an object [BeautifulSoup.Tag], named root, that does not have any sections and where each heading is a direct child of it.
+
+## Method SectionBuilder.build
+
+No inputs.
+
+Performs the main task that this class is suposed to perform.
+
+A section includes a title, denoted by an header element, and all the posterior sibling elements until the next header.
+
+The first section may not include title.
+
+The parent of a section should be a section.
+
+It performs an loop over the elements siblings of the first element in element [main]. Whenever a heading is found, a element [section] is created and inserted before it. The heading, as well as any element after it, are extracted and inserted into that section.
+
+If another heading with same relevance as previous is found, it inaugurates another section, sibling to the previous. If the heading found has lower relevance, it inaugurates a subsection.
+
+The current open sections are tracked by the list named [sections]
+
