@@ -12,7 +12,9 @@ Takes a directory as the source of a documentation and generates a directory wit
 
 When building the documentation to put it in a site, this option should could be [../kaki], so that the directory [kaki] will be expected to be 1 level up from the submodule directory. Then, there can be multiple built documentations from different projects that all use the same [kaki] CSS and javascript files.
 
-[--build-only] is an optional path to a json file that has a list of paths of selected source files to be built. Useful for debugging.
+[--build-only=] is an optional path to a json file that has a list of paths of selected source files to be built. Useful for debugging.
+
+[--replace-spaces-by-dashes=]. If [true], spaces in source file name become dashes in built file name. This is the default.
 
 # Title of generated document
 

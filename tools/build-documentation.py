@@ -129,6 +129,8 @@ class FileBuilder :
 
 		self.destination = self.documentation_builder.destination / source_from_root.with_suffix( ".html" )
 
+		if ( self.documentation_builder.replace_spaces_by_dashes ) : self.destination = Path( str( self.destination ).replace( ' ', '-' ) )
+
 		self.idiom = source_from_root.parents[-2]
 
 		self.root_from_file = self.documentation_builder.destination.relative_to( self.destination.parent, walk_up=True )
@@ -277,7 +279,8 @@ class DocumentationBuilder :
 			'source',
 			'destination',
 			'kaki_from_destination',
-			'selection_to_build'
+			'selection_to_build',
+			'replace_spaces_by_dashes'
 		]
 
 		for name in options :
@@ -365,6 +368,8 @@ if __name__ == '__main__':
 	option_parser.add_argument( "--kaki", dest='kaki_from_destination', default="kaki", type=Path )
 
 	option_parser.add_argument( "--build-only", dest='selection_to_build', type=Path )
+
+	option_parser.add_argument( "--replace-spaces-by-dashes", dest='replace_spaces_by_dashes', action=argparse.BooleanOptionalAction )
 
 	options = option_parser.parse_args()
 
