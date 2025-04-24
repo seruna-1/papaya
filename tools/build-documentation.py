@@ -8,6 +8,8 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
+import shutil
+
 class SectionBuilder :
 
 	def __init__ ( self, root ) :
@@ -125,19 +127,49 @@ class FileBuilder :
 
 		self.source = path.resolve()
 
-		source_from_root = self.source.relative_to( self.documentation_builder.source )
+		if not self.source.suffix in self.valid_source_suffixes : raise Exception( "Invalid source suffix." )
 
-		self.destination = self.documentation_builder.destination / source_from_root.with_suffix( ".html" )
+		if self.documentation_builder.source.is_file() :
 
-		if ( self.documentation_builder.replace_spaces_by_dashes ) : self.destination = Path( str( self.destination ).replace( ' ', '-' ) )
+			self.destination = self.documentation_builder.destination / self.source.with_suffix( ".html" ).name
 
-		self.idiom = source_from_root.parents[-2]
+		else :
+
+			source_from_root = self.source.relative_to( self.documentation_builder.source )
+
+			self.destination = self.documentation_builder.destination / source_from_root.with_suffix( ".html" )
+
+		if self.documentation_builder.replace_spaces_by_dashes : self.destination = Path( str( self.destination ).replace( ' ', '-' ) )
+
+		self.find_idiom()
 
 		self.root_from_file = self.documentation_builder.destination.relative_to( self.destination.parent, walk_up=True )
 
 		self.kaki_from_file = self.root_from_file / self.documentation_builder.kaki_from_destination
 
+		if ( self.documentation_builder.translations != None ) : self.find_translation_group()
+
+	def find_idiom ( self ) :
+
+		codes = [ 'en_US', 'pt_BR' ]
+
+		for suffix in self.source.suffixes :
+
+			if suffix[1:] in codes : self.idiom = suffix[1:] ; return
+
+		for parent in self.source.parents :
+
+			if parent.name in codes : self.idiom = parent.name ; return
+
+		self.idiom = None
+
+		return
+
+	def find_translation_group ( self ) :
+
 		translation_groups = self.documentation_builder.translations
+
+		assert ( translation_groups != None )
 
 		self.translations = None
 
@@ -237,15 +269,39 @@ class FileBuilder :
 
 	def build_language_information ( self, document ) :
 
-		for element in document.head.find_all( 'meta' ) :
+		metas = document.head.select( "meta[lang]" )
 
-			if 'lang' in element.attrs : element['lang'] = str( self.idiom ) ; break
+		meta = None
+
+		if ( len( metas ) > 1 ) : raise Exception( "More than one [meta] containing idiom information." )
+
+		elif ( len( metas ) == 1 ) and ( self.idiom == None ) :
+
+			metas[0].decompose()
+
+		elif ( len( metas ) == 1 ) and ( self.idiom != None ) :
+
+			meta = metas[0]
+
+		elif ( len( metas ) == 0 ) and ( self.idiom != None ) :
+
+			meta = document.new_tag( "meta" )
+
+			document.head.append( meta )
+
+		if ( meta != None ) : meta['lang'] = str( self.idiom )
 
 		dialog = document.find_all( 'dialog' )[0]
 
 		div = document.new_tag( "div" )
 
 		dialog.append( div )
+
+		paragraph = document.new_tag( "p" ) ; div.append( paragraph )
+
+		if ( self.idiom == None ) : paragraph.string = "Unknown idiom." ; return
+
+		else : paragraph.string = f"This page is in {self.idiom}."
 
 		if self.translations != None :
 
@@ -265,7 +321,11 @@ class FileBuilder :
 
 				paragraph.append( anchor )
 
-		else : div.append( document.new_tag( "p" ) ) ; div.p.string = "No translations for this page."
+		else :
+
+			paragraph = document.new_tag( "p" ) ; paragraph.string = "No translations for this page."
+
+			div.append( paragraph )
 
 		return
 
@@ -280,7 +340,7 @@ class DocumentationBuilder :
 			'destination',
 			'kaki_from_destination',
 			'selection_to_build',
-			'replace_spaces_by_dashes'
+			'replace_spaces_by_dashes',
 		]
 
 		for name in options :
@@ -295,9 +355,7 @@ class DocumentationBuilder :
 
 		self.model_text = self.model_path.read_text()
 
-		translations_path = self.source / 'translations.json'
-
-		self.translations = json.loads( translations_path.read_text() )
+		self.get_translations()
 
 		if self.selection_to_build != None : self.selection_to_build = json.loads( self.selection_to_build.read_text() )
 
@@ -305,7 +363,21 @@ class DocumentationBuilder :
 
 		return
 
-	def build_specific ( self ) :
+	def get_translations ( self ) :
+
+		translations_path = self.source / 'translations.json'
+
+		if (
+			self.source.is_dir()
+			and translations_path.is_file()
+		) :
+			self.translations = json.loads( translations_path.read_text() )
+
+		else : self.translations = None
+
+		return
+
+	def build_selected ( self ) :
 
 		assert ( len( self.selection_to_build ) > 0 ) , 'Nothing specified to build.'
 
@@ -313,11 +385,7 @@ class DocumentationBuilder :
 
 			source_file_path = self.source / source_file_path
 
-			assert ( source_file_path.suffix in self.file_builder.valid_source_suffixes ) , 'File with unsupported suffix specified.'
-
-			self.file_builder.set_source( **{
-				'path' : source_file_path
-			} )
+			self.file_builder.set_source( source_file_path )
 
 			self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True )
 
@@ -335,11 +403,9 @@ class DocumentationBuilder :
 
 				source_file_path = source_directory_path / source_file_name
 
-				if not source_file_path.suffix in self.file_builder.valid_source_suffixes : continue
+				try : self.file_builder.set_source( source_file_path )
 
-				self.file_builder.set_source( **{
-					'path' : source_file_path
-				} )
+				except : continue
 
 				if not parent_was_relocated : self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True ) ; parent_was_relocated = True
 
@@ -349,9 +415,27 @@ class DocumentationBuilder :
 
 	def build ( self ) :
 
-		if ( self.selection_to_build != None ) and ( self.selection_to_build != [] ) :
+		if self.destination.exists() : shutil.rmtree( str( self.destination ) )
 
-			self.build_specific()
+		self.destination.mkdir()
+
+		if ( self.source.is_file() ) :
+
+			self.file_builder.set_source( self.source )
+
+			self.file_builder.build()
+
+			print( f"\"{self.file_builder.destination}\"" )
+
+			return
+
+		else : assert ( self.source.is_dir() )
+
+		if (
+			self.selection_to_build != None
+			and self.selection_to_build != []
+		) :
+			self.build_selected()
 
 		else : self.build_all()
 
@@ -363,9 +447,9 @@ if __name__ == '__main__':
 
 	option_parser.add_argument( "--source", dest='source', required=True, type=Path )
 
-	option_parser.add_argument( "--destination", dest='destination', required=True, type=Path )
+	option_parser.add_argument( "--destination", dest='destination', default=Path( '/tmp/kaki' ), type=Path )
 
-	option_parser.add_argument( "--kaki", dest='kaki_from_destination', default="kaki", type=Path )
+	option_parser.add_argument( "--kaki", dest='kaki_from_destination', default=Path(__file__).parents[1].resolve(), type=Path )
 
 	option_parser.add_argument( "--build-only", dest='selection_to_build', type=Path )
 

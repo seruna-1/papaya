@@ -1,5 +1,3 @@
-<title> Insides </title>
-
 # Class DocumentationBuilder
 
 Responsible for building the documentation. The building process of each individual file is carried by another class: [FileBuilder].
