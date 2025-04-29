@@ -17,6 +17,8 @@
 
 	--color-background-1: #212121;
 
+	--color-background-faded: #212121ab;
+
 	--color-background-2: #2b2b2b;
 
 	--color-background-interactive: #ffb30029;
@@ -34,6 +36,11 @@
 	--color-border: #54545494;
 
 	--color-border-hover: #bdbdbd;
+}
+
+::backdrop
+{
+	background-color: var( --color-background-faded );
 }
 
 html
@@ -61,12 +68,19 @@ header
 	text-align: center;
 }
 
-main, header, body > nav
+main, header
 {
-	padding-right: calc( var(--empty-space-width) / 2 + 0.6rem );
-	padding-left: calc( var(--empty-space-width) / 2 + 0.6rem );
-	padding-top: 2rem;
-	padding-bottom: 2rem;
+	padding: 2rem calc( var(--empty-space-width) / 2 + 0.6rem ); /*Top and bottom, respectively*/
+}
+
+dialog[open]
+{
+	max-height: 90vh;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 2vh;
+	padding: 2vh 0;
+	width: calc( 100vw - var(--empty-space-width) ); /*Top and bottom, respectively*/
 }
 
 ul
@@ -251,14 +265,6 @@ input[type="submit"], input[type="reset"], input[type="button"]
 	position: fixed;
 	bottom: 0px;
 	right: 0px;
-}
-
-#viewSelectors
-{
-	margin-bottom: 2.5rem;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
 }
 
 input.viewSelector

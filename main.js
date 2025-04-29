@@ -129,11 +129,15 @@ class DialogMain extends Dialog
 
 		for ( const dialog of dialogs )
 		{
+			let paragraph = document.createElement( "p" );
+
 			let buttonOfDialog = dialog.buttonShow;
 
 			buttonOfDialog.setAttribute( "class", "buttonOfDialog" );
 
-			content.appendChild( buttonOfDialog );
+			paragraph.appendChild( buttonOfDialog );
+
+			content.appendChild( paragraph );
 
 			buttonOfDialog.setAttribute( "value", dialog.name );
 		}
