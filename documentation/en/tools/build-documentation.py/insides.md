@@ -1,22 +1,24 @@
 # Class DocumentationBuilder
 
-Responsible for building the documentation. The building process of each individual file is carried by another class: [FileBuilder].
+Responsible for building the documentation, as a hole. The building process of each individual file is carried by an object of class [FileBuilder], created at the end of method [DocumentationBuilder.__init__], as [self.file_builder].
 
-An instance of [FileBuilder] is created at the end of method [DocumentationBuilder.__init__], as [self.file_builder].
+## Method DocumentationBuilder.__init__
 
-As input, [DocumentationBuilder.__init__] takes a [argparse.Namespace] named [options] and treats it as a dictionary. Supported keys in it are recreated in [self], as properties. They are:
+Input:
 
- - [source], path to the directory that acomodates source files.
-
- - [destination], path to the directory that will acomodate generated files.
-
- - [kaki_from_destination], the expected path to [kaki] from [self.destination]. That will be used by instance of [FileBuilder], when method [FileBuilder.set_source] is called, to define the path from the source to [kaki]. This involves prefixing as many [../] to [kaki_from_destination] as needed for the current file to reach the root, and then reach [kaki].
-
- - [selection_to_build]. A path to a json file consisting of a list of files to be built. Can be [None]. If not [None], the file will be parsed into an pythonic list. If this list is empty, an error will be throwed. Otherwise, only the files specified by the paths in that list will be built. The list is stored in property [self.selection_to_build].
+ - Instance of [argparse.Namespace] named [options] treated as a dictionary containing command-line options and their values. Its upported keys are recreated in [self], as properties. They are:
 
 Properties [self.source] and [self.destination] are resolved.
 
 From each source file, will be generated a destination file at the same relative path from [self.source], except that the file type extension may change, like from [.md] suffix in the source file to [.html] suffix in generated file.
+
+[self.model_text] is a HTML text that will be used as base when building a file. Since source files are or provide partial HTML, only regarding the content, the generic content is stored in this model. A built file is the combination of these parts.
+
+Calls method [get_translations] to load translation groups from json file.
+
+If the command-line option [selection_to_build] is present, the specified json file will be loaded.
+
+The instance of [FileBuilder] is created.
 
 ## Method DocumentationBuilder.build
 
@@ -62,7 +64,7 @@ Builds the source file.
 
 ## Method FileBuilder.build_title
 
-## Method FileBuilder.build_references_to_kaki
+## Method FileBuilder.build_references_to_papaya
 
 ## Method FileBuilder.build_language_information
 

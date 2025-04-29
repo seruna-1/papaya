@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup
 
 import shutil
 
+import csv
+
 class SectionBuilder :
 
 	def __init__ ( self, root ) :
@@ -115,7 +117,19 @@ class FileBuilder :
 
 		self.destination = None
 
-		self.kaki_from_file = None
+		self.papaya_from_file = None
+
+		self.idiom_tags = []
+
+		language_tags_csv_path = Path(__file__).parent / 'ietf-language-tags.csv'
+
+		assert language_tags_csv_path.exists()
+
+		with open( language_tags_csv_path ) as csvfile:
+
+			reader = csv.DictReader(csvfile)
+
+			for row in reader: self.idiom_tags.append( row['lang'] )
 
 		self.idiom = None
 
@@ -145,21 +159,19 @@ class FileBuilder :
 
 		self.root_from_file = self.documentation_builder.destination.relative_to( self.destination.parent, walk_up=True )
 
-		self.kaki_from_file = self.root_from_file / self.documentation_builder.kaki_from_destination
+		self.papaya_from_file = self.root_from_file / self.documentation_builder.papaya_from_destination
 
 		if ( self.documentation_builder.translations != None ) : self.find_translation_group()
 
 	def find_idiom ( self ) :
 
-		codes = [ 'en_US', 'pt_BR' ]
-
 		for suffix in self.source.suffixes :
 
-			if suffix[1:] in codes : self.idiom = suffix[1:] ; return
+			if suffix[1:] in self.idiom_tags : self.idiom = suffix[1:] ; return
 
 		for parent in self.source.parents :
 
-			if parent.name in codes : self.idiom = parent.name ; return
+			if parent.name in self.idiom_tags : self.idiom = parent.name ; return
 
 		self.idiom = None
 
@@ -213,7 +225,7 @@ class FileBuilder :
 
 		self.build_language_information( document )
 
-		self.build_references_to_kaki( document )
+		self.build_references_to_papaya( document )
 
 		self.destination.write_text( document.prettify() )
 
@@ -239,11 +251,11 @@ class FileBuilder :
 
 		return
 
-	def build_references_to_kaki ( self, document ) :
+	def build_references_to_papaya ( self, document ) :
 
-		kaki_css_path = self.kaki_from_file / 'main.css'
+		papaya_css_path = self.papaya_from_file / 'main.css'
 
-		kaki_javascript_path = self.kaki_from_file / 'main.js'
+		papaya_javascript_path = self.papaya_from_file / 'main.js'
 
 		elements_link_stylesheet = document.head.find_all( 'link', rel='stylesheet' )
 
@@ -251,9 +263,9 @@ class FileBuilder :
 
 		for element in elements_link_stylesheet :
 
-			refers_to_kaki = 'kaki' in element['href']
+			refers_to_papaya = 'papaya' in element['href']
 
-			if refers_to_kaki : element['href'] = str( kaki_css_path ) ; break
+			if refers_to_papaya : element['href'] = str( papaya_css_path ) ; break
 
 		elements_script = document.find_all( 'script' )
 
@@ -261,9 +273,9 @@ class FileBuilder :
 
 		for element_script in elements_script :
 
-			refers_to_kaki = ( 'src' in element_script.attrs ) and ( 'kaki' in element_script['src'] )
+			refers_to_papaya = ( 'src' in element_script.attrs ) and ( 'papaya' in element_script['src'] )
 
-			if refers_to_kaki : element_script['src'] = str( kaki_javascript_path ) ; break
+			if refers_to_papaya : element_script['src'] = str( papaya_javascript_path ) ; break
 
 		return
 
@@ -338,7 +350,7 @@ class DocumentationBuilder :
 		valid_options = [
 			'source',
 			'destination',
-			'kaki_from_destination',
+			'papaya_from_destination',
 			'selection_to_build',
 			'replace_spaces_by_dashes',
 		]
@@ -351,9 +363,9 @@ class DocumentationBuilder :
 
 		self.destination = self.destination.resolve()
 
-		self.model_path = Path( __file__ ).parent / 'model.html'
+		model_path = Path( __file__ ).parent / 'model.html'
 
-		self.model_text = self.model_path.read_text()
+		self.model_text = model_path.read_text()
 
 		self.get_translations()
 
@@ -447,13 +459,13 @@ if __name__ == '__main__':
 
 	option_parser.add_argument( "--source", dest='source', required=True, type=Path )
 
-	option_parser.add_argument( "--destination", dest='destination', default=Path( '/tmp/kaki' ), type=Path )
+	option_parser.add_argument( "--destination", dest='destination', default=Path( '/tmp/papaya' ), type=Path )
 
-	option_parser.add_argument( "--kaki", dest='kaki_from_destination', default=Path(__file__).parents[1].resolve(), type=Path )
+	option_parser.add_argument( "--papaya", dest='papaya_from_destination', default=Path(__file__).parents[1].resolve(), type=Path )
 
 	option_parser.add_argument( "--build-only", dest='selection_to_build', type=Path )
 
-	option_parser.add_argument( "--replace-spaces-by-dashes", dest='replace_spaces_by_dashes', action=argparse.BooleanOptionalAction )
+	option_parser.add_argument( "--replace-spaces-by-dashes", dest='replace_spaces_by_dashes', default=True, action=argparse.BooleanOptionalAction )
 
 	options = option_parser.parse_args()
 
