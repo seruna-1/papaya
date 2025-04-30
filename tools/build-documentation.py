@@ -12,6 +12,8 @@ import shutil
 
 import csv
 
+import os
+
 class SectionBuilder :
 
 	def __init__ ( self, root ) :
@@ -135,6 +137,8 @@ class FileBuilder :
 
 		self.translations = None
 
+		self.document = None
+
 		return
 
 	def set_source ( self, path ) :
@@ -203,7 +207,7 @@ class FileBuilder :
 
 	def build ( self ) :
 
-		document = BeautifulSoup( self.documentation_builder.model_text, 'html.parser' )
+		self.document = BeautifulSoup( self.documentation_builder.model_text, 'html.parser' )
 
 		part = self.source.read_text()
 
@@ -217,17 +221,19 @@ class FileBuilder :
 
 			section_builder.build()
 
-		insert_point = document.find( 'main' )
+		insert_point = self.document.find( 'main' )
 
 		insert_point.append(part)
 
-		self.build_title( document )
+		self.build_title( self.document )
 
-		self.build_language_information( document )
+		self.build_language_information( self.document )
 
-		self.build_references_to_papaya( document )
+		self.build_references_to_papaya( self.document )
 
-		self.destination.write_text( document.prettify() )
+		self.destination.write_text( self.document.prettify() )
+
+		if self.documentation_builder.pack : self.pack_external()
 
 		return
 
@@ -341,6 +347,73 @@ class FileBuilder :
 
 		return
 
+	def pack_external ( self ) :
+
+		packed = self.documentation_builder.packed
+
+		attributes = [ 'href', 'src' ]
+
+		references = []
+
+		for element in self.document.main.find_all() :
+
+			for attribute in attributes :
+
+				if attribute in element.attrs : references.append( Path( element[attribute] ) )
+
+		for reference in references :
+
+			current_location = self.source.parent / reference
+
+			current_location = current_location.absolute()
+
+			if \
+			(
+				current_location.exists()
+				and current_location not in packed
+			) :
+
+				destination = self.documentation_builder.destination / current_location.relative_to( self.documentation_builder.source )
+
+				if not current_location.is_symlink() :
+
+					destination.parent.mkdir( parents=True, exist_ok=True )
+
+					shutil.copyfile( current_location, destination, follow_symlinks=False )
+
+					packed.append( current_location )
+
+				else :
+
+					link = current_location
+
+					link_destination = destination
+
+					linked = link.resolve()
+
+					linked_destination = self.documentation_builder.destination / linked.relative_to( self.documentation_builder.source )
+
+					link_target = linked_destination.relative_to( link_destination.parent, walk_up=True )
+
+					if \
+					(
+						not linked.is_relative_to( self.documentation_builder.source )
+						or linked not in packed
+					) :
+						linked_destination.parent.mkdir( parents=True, exist_ok=True )
+
+						shutil.copyfile( linked, linked_destination )
+
+						packed.append( linked_destination )
+
+					link_destination.parent.mkdir( parents=True, exist_ok=True )
+
+					os.symlink( link_target, link_destination )
+
+					packed.append( link )
+
+		return
+
 class DocumentationBuilder :
 
 	def __init__ ( self, options ) :
@@ -350,9 +423,10 @@ class DocumentationBuilder :
 		valid_options = [
 			'source',
 			'destination',
+			'overwrite',
 			'papaya_from_destination',
-			'selection_to_build',
 			'replace_spaces_by_dashes',
+			'pack'
 		]
 
 		for name in options :
@@ -367,25 +441,27 @@ class DocumentationBuilder :
 
 		self.model_text = model_path.read_text()
 
-		self.get_translations()
+		translations_path = self.source / 'translations.json'
 
-		if self.selection_to_build != None : self.selection_to_build = json.loads( self.selection_to_build.read_text() )
+		if translations_path.is_file() : self.translations = json.loads( translations_path.read_text() )
+
+		else : self.translations = None
+
+		self.selection_to_build = []
+
+		if self.source.is_file():
+
+			self.selection_to_build.append( self.source )
+
+			self.source = self.source.parent
+
+		file_selection_json = self.source / "selection.json"
+
+		if file_selection_json.is_file() : self.selection_to_build.append( json.loads( self.file_selection_json.read_text() ) )
 
 		self.file_builder = FileBuilder( **{ 'documentation_builder' : self } )
 
-		return
-
-	def get_translations ( self ) :
-
-		translations_path = self.source / 'translations.json'
-
-		if (
-			self.source.is_dir()
-			and translations_path.is_file()
-		) :
-			self.translations = json.loads( translations_path.read_text() )
-
-		else : self.translations = None
+		if self.pack : self.packed = []
 
 		return
 
@@ -402,6 +478,8 @@ class DocumentationBuilder :
 			self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True )
 
 			self.file_builder.build()
+
+			print( self.file_builder.destination )
 
 		return
 
@@ -427,28 +505,17 @@ class DocumentationBuilder :
 
 	def build ( self ) :
 
-		if self.destination.exists() : shutil.rmtree( str( self.destination ) )
-
-		self.destination.mkdir()
-
-		if ( self.source.is_file() ) :
-
-			self.file_builder.set_source( self.source )
-
-			self.file_builder.build()
-
-			print( f"\"{self.file_builder.destination}\"" )
-
-			return
-
-		else : assert ( self.source.is_dir() )
-
-		if (
-			self.selection_to_build != None
-			and self.selection_to_build != []
+		if \
+		(
+			self.destination.exists()
+			and len( os.listdir( self.destination ) ) > 0
 		) :
-			self.build_selected()
+			if self.overwrite : shutil.rmtree( str( self.destination ) )
+			else : raise Exception( "Destination directory exists.")
 
+		if not self.destination.exists() : self.destination.mkdir()
+
+		if len( self.selection_to_build ) > 0 : self.build_selected()
 		else : self.build_all()
 
 		return
@@ -461,11 +528,15 @@ if __name__ == '__main__':
 
 	option_parser.add_argument( "--destination", dest='destination', default=Path( '/tmp/papaya' ), type=Path )
 
+	option_parser.add_argument( "--overwrite", default=False, action=argparse.BooleanOptionalAction )
+
 	option_parser.add_argument( "--papaya", dest='papaya_from_destination', default=Path(__file__).parents[1].resolve(), type=Path )
 
 	option_parser.add_argument( "--build-only", dest='selection_to_build', type=Path )
 
 	option_parser.add_argument( "--replace-spaces-by-dashes", dest='replace_spaces_by_dashes', default=True, action=argparse.BooleanOptionalAction )
+
+	option_parser.add_argument( "--pack", default=False, action=argparse.BooleanOptionalAction )
 
 	options = option_parser.parse_args()
 

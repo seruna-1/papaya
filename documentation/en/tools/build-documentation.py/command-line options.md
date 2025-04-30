@@ -27,7 +27,3 @@ Do not replace spaces in source file name by dashes in built file name.
 # [--pack]
 
 To put local files referenced in source files into destination directory.
-
-An condition to this is that the local file must be inside the source directory. If it is outside, it wont be packed. The ideal solution to this is: a file is outside the source directory but it has a link (either symbolical or hard) in there and the source file references the link, so that the actual file will be copied to the destination directory.
-
-The link is only dereferenced when it points to a file outside the source root. If a link inside the root points to a file also inside the root, the link will be recreated in the destination root. This allows a file having many names, depending on the idiom, without massive content duplication.

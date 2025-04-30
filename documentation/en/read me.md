@@ -38,7 +38,7 @@ The documentation will be built to directory [built/documentation/html-papaya]. 
 
 To build a single file, use:
 
-	python ./tools/build-documentation.py --source=./documentation/en/README.md
+	python ./tools/build-documentation.py --source="./documentation/en/read me.md"
 
 This will build the file specified by [--source]. The ommission of [--destination] will make it to be put in a temporary location, under the directory [/tmp/papaya], and make the program return the location to the built file. The ommission of [--papaya] makes the location of css and javascript files be inferred using the location of the script (these files are siblings of the directory  that contains the scripts).
 
@@ -80,9 +80,13 @@ Translation groups are defined in a file [translations.json]. For a given source
 		[ "pt-BR/importante", "en/important" ]
 	]
 
-# Refernces to files
+# Packing
 
-Files that are referenced in source files will be copied to built destination upon building. The tool [build-file]
+Files that are referenced in source files will be copied to built destination upon building.
+
+An condition to this is that the local file must be inside the source directory. If it is outside, it wont be packed. The ideal solution is: a file is outside the source directory but it has a link (either symbolical or hard) in there and the source file references the link, so that the actual file will be copied to the destination directory.
+
+The link is only dereferenced when it points to a file outside the source root. If a link inside the root points to a file also inside the root, the link will be recreated in the destination root. This allows a file having many names, depending on the idiom, without massive content duplication.
 
 # Title of generated document
 
