@@ -1,16 +1,10 @@
-const htmlHead = document.querySelector( "head" );
-
-const htmlBody = document.querySelector( "body" );
-
-const htmlMain = document.querySelector( "main" );
-
-const titles = document.querySelectorAll( "h1, h2, h3, h4, h5, h6" );
+const headerTagNames = [ "H1", "H2", "H2", "H3", "H4", "H5", "H6" ];
 
 class ButtonToSection
 {
 	constructor( avaiableElement )
 	{
-		if ( [ "H1", "H2", "H2", "H3", "H4", "H5", "H6" ].includes( avaiableElement.tagName ) == true )
+		if ( headerTagNames.includes( avaiableElement.tagName ) )
 		{
 			this.section = avaiableElement;
 
@@ -24,41 +18,28 @@ class ButtonToSection
 			this.element = avaiableElement;
 		}
 
-		this.element.addEventListener( "click", ( event ) => { this.replyClick( event ) } );
+		this.element.addEventListener( "click", this );
 	}
 
-	replyClick( event )
+	handleEvent( event )
 	{
-		console.log(this.section);
-		this.section.scrollIntoView();
-	}
-}
-
-class ButtonGoTop
-{
-	constructor()
-	{
-		this.element = document.createElement( "input" );
-
-		this.element.setAttribute( "type", "button" );
-
-		this.element.setAttribute("value", "Top");
-
-		this.element.setAttribute("ID", "buttonGoTop");
-
-		this.element.addEventListener( "click", ButtonGoTop.replyClick );
+		if ( event.type === "click" )
+		{
+			this.section.scrollIntoView();
+		}
 	}
 
-	static replyClick( event )
-	{
-		return window.scrollTo( 0, 0 );
-	}
 }
 
 class Dialog
 {
-	constructor( name )
+	constructor( name, parent )
 	{
+		if ( name === undefined ) { return null; }
+		else { this.name = name; }
+
+		if ( parent !== undefined ) { this.parent = parent; }
+
 		const existing = document.querySelector( `dialog[name=\"${name}\"]` );
 
 		if ( existing != null )
@@ -73,11 +54,17 @@ class Dialog
 			this.element.appendChild( this.buildContent() );
 		}
 
-		this.name = name;
-
 		this.element.setAttribute( "name", name );
 
-		this.element.prepend( this.buildButtonClose() );
+		this.buttonClose = document.createElement( "input" );
+
+		this.buttonClose.setAttribute( "type", "button" );
+
+		this.buttonClose.setAttribute( "value", "Close" );
+
+		this.buttonClose.addEventListener( "click", this );
+
+		this.element.prepend( this.buttonClose );
 
 		this.buttonShow = document.createElement( "input" );
 
@@ -85,7 +72,7 @@ class Dialog
 
 		this.buttonShow.setAttribute( "value", this.name );
 
-		this.buttonShow.addEventListener( "click", ( event ) => { this.replyButtonShow( event ) } );
+		this.buttonShow.addEventListener( "click", this );
 
 		htmlBody.appendChild( this.element );
 	}
@@ -95,27 +82,39 @@ class Dialog
 		return document.createElement( "div" );
 	}
 
-	buildButtonClose()
+	handleEvent( event )
 	{
-		const button = document.createElement( "input" );
+		if
+		(
+			event.target === this.buttonClose
+			&& event.type === "click"
+		)
+		{
+			this.close();
+		}
 
-		button.setAttribute( "type", "button" );
+		else if
+		(
+			event.target === this.buttonShow
+			&& event.type === "click"
+		)
+		{
+			this.element.showModal();
+		}
 
-		button.setAttribute( "value", "Close" );
-
-		button.addEventListener( "click", () => { this.replyButtonClose( event ) } );
-
-		return button;
+		return
 	}
 
-	replyButtonShow( event )
-	{
-		this.element.showModal();
-	}
-
-	replyButtonClose( event )
+	close()
 	{
 		this.element.close();
+	}
+
+	closePropagate()
+	{
+		this.close();
+
+		this.parent.closePropagate();
 	}
 }
 
@@ -126,6 +125,14 @@ class DialogMain extends Dialog
 		const content = document.createElement( "div" );
 
 		content.setAttribute("id", "viewSelectors");
+
+		const dialogs = [
+
+			new DialogSections( "sections" ),
+
+			new Dialog( "idioms" )
+
+		];
 
 		for ( const dialog of dialogs )
 		{
@@ -158,6 +165,8 @@ class DialogSections extends Dialog
 
 			let button = new ButtonToSection( title );
 
+			button.element.addEventListener( "click", this );
+
 			paragraph.appendChild( button.element );
 
 			content.appendChild( paragraph );
@@ -166,30 +175,6 @@ class DialogSections extends Dialog
 		return content;
 	}
 }
-
-enumerateTitles();
-
-let dialogs = [
-
-	new DialogSections( "sections" ),
-
-	new Dialog( "idioms" )
-
-];
-
-const dialogMain = new DialogMain( "main" );
-
-const htmlHeader = createHeader();
-
-const buttonGoTop = new ButtonGoTop()
-
-htmlBody.appendChild( buttonGoTop.element );
-
-dialogMain.buttonShow.setAttribute( "value", "..." );
-
-dialogMain.buttonShow.setAttribute( "id", "buttonShowDialogMain" );
-
-htmlBody.appendChild( dialogMain.buttonShow );
 
 function createHeader ()
 {
@@ -216,6 +201,9 @@ function enumerateTitles ()
 
 	for ( const title of titles )
 	{
+
+		if ( htmlHeader.contains( title ) ) { continue; }
+
 		level = parseInt( title.tagName[1] );
 
 		if ( level > last_level )
@@ -285,5 +273,25 @@ function generateSelfAnchors ()
 
 	return;
 }
+
+const htmlHead = document.querySelector( "head" );
+
+const htmlBody = document.querySelector( "body" );
+
+const htmlMain = document.querySelector( "main" );
+
+const htmlHeader = createHeader();
+
+const titles = document.querySelectorAll( "h1, h2, h3, h4, h5, h6" );
+
+enumerateTitles();
+
+const dialogMain = new DialogMain( "main" );
+
+dialogMain.buttonShow.setAttribute( "value", "..." );
+
+dialogMain.buttonShow.setAttribute( "id", "buttonShowDialogMain" );
+
+htmlBody.appendChild( dialogMain.buttonShow );
 
 generateSelfAnchors();

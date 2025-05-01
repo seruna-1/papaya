@@ -44,7 +44,7 @@ This will build the file specified by [--source]. The ommission of [--destinatio
 
 So, to view a file in a browser:
 
-	chromium $(python ./tools/build-documentation.py --source=./documentation/en_US/README.md)
+	chromium $(python ./tools/build-documentation.py --source="./documentation/en/read me.md")
 
 # Idiom
 
