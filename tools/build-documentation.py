@@ -147,15 +147,9 @@ class FileBuilder :
 
 		if not self.source.suffix in self.valid_source_suffixes : raise Exception( "Invalid source suffix." )
 
-		if self.documentation_builder.source.is_file() :
+		self.source_from_root = self.source.relative_to( self.documentation_builder.source )
 
-			self.destination = self.documentation_builder.destination / self.source.with_suffix( ".html" ).name
-
-		else :
-
-			source_from_root = self.source.relative_to( self.documentation_builder.source )
-
-			self.destination = self.documentation_builder.destination / source_from_root.with_suffix( ".html" )
+		self.destination = self.documentation_builder.destination / self.source_from_root.with_suffix( ".html" )
 
 		if self.documentation_builder.replace_spaces_by_dashes : self.destination = Path( str( self.destination ).replace( ' ', '-' ) )
 
@@ -166,6 +160,8 @@ class FileBuilder :
 		self.papaya_from_file = self.root_from_file / self.documentation_builder.papaya_from_destination
 
 		if ( self.documentation_builder.translations != None ) : self.find_translation_group()
+
+		return
 
 	def find_idiom ( self ) :
 
@@ -195,7 +191,7 @@ class FileBuilder :
 
 			for file_path in group :
 
-				if ( source_from_root.with_suffix('') == Path( file_path ) ) :
+				if ( self.source_from_root.with_suffix('') == Path( file_path ) ) :
 
 					self.translations = group.copy()
 
@@ -325,6 +321,8 @@ class FileBuilder :
 
 			for translation_path in self.translations :
 
+				if self.documentation_builder.replace_spaces_by_dashes : translation_path = translation_path.replace( ' ', '-' )
+
 				translation_idiom = str( Path( translation_path ).parents[-2] )
 
 				translation_path = self.root_from_file / translation_path
@@ -426,6 +424,7 @@ class DocumentationBuilder :
 			'overwrite',
 			'papaya_from_destination',
 			'replace_spaces_by_dashes',
+			'build_selection',
 			'pack'
 		]
 
@@ -457,7 +456,12 @@ class DocumentationBuilder :
 
 		file_selection_json = self.source / "selection.json"
 
-		if file_selection_json.is_file() : self.selection_to_build.append( json.loads( self.file_selection_json.read_text() ) )
+		if \
+		(
+			self.build_selection
+			and file_selection_json.is_file()
+		):
+			self.selection_to_build.append( json.loads( file_selection_json.read_text() ) )
 
 		self.file_builder = FileBuilder( **{ 'documentation_builder' : self } )
 
@@ -493,11 +497,16 @@ class DocumentationBuilder :
 
 				source_file_path = source_directory_path / source_file_name
 
-				try : self.file_builder.set_source( source_file_path )
+				try :
+					self.file_builder.set_source( source_file_path )
 
-				except : continue
+				except :
+					continue
 
-				if not parent_was_relocated : self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True ) ; parent_was_relocated = True
+				else :
+					pass
+
+				if not parent_was_relocated : self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True ) ; parent_was_relocated = True ; #print(f"{self.file_builder.destination.parent}")
 
 				self.file_builder.build()
 
@@ -532,7 +541,7 @@ if __name__ == '__main__':
 
 	option_parser.add_argument( "--papaya", dest='papaya_from_destination', default=Path(__file__).parents[1].resolve(), type=Path )
 
-	option_parser.add_argument( "--build-only", dest='selection_to_build', type=Path )
+	option_parser.add_argument( "--build-only", dest='build_selection', default=False, action=argparse.BooleanOptionalAction )
 
 	option_parser.add_argument( "--replace-spaces-by-dashes", dest='replace_spaces_by_dashes', default=True, action=argparse.BooleanOptionalAction )
 
