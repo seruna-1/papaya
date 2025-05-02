@@ -285,7 +285,11 @@ class FileBuilder :
 
 			given_titles[0].decompose()
 
-		else : title = str( self.source.stem )
+		else :
+
+			title = str( self.source.stem ).replace( f".{self.idiom}", '' )
+
+			if self.debug : self.debugger.post( f"Generated title {title} from filename {self.source.name}." )
 
 		document.html.head.title.append( title )
 
