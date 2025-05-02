@@ -91,3 +91,16 @@ The link is only dereferenced when it points to a file outside the source root. 
 # Title of generated document
 
 The title of the generated HTML document will be the name of the source file, minus its suffix, unless the source file has a HTML element [title] specifying it. This apllies to markdown files, because there can be embedded HTML elements in it.
+
+# Entry points
+
+Each language has an entry point HTMl page, but [index.html] is usually loaded by default.
+
+To allow multilanguage support, the built [index.html] file is a redirector. When loaded, it replaces the url by the page whose language is the same as the browsers preferred lanugage.
+
+The pages that can be redirected to are listed in [entry-points.json]. For example:
+
+	[
+		"readme.en.html",
+		"leia-me.pt-BR.html"
+	]

@@ -14,6 +14,22 @@ import csv
 
 import os
 
+class Debugger :
+
+	def __init__ ( self, instance ) :
+
+		self.activated = True
+
+		self.name = type(instance).__name__
+
+		return
+
+	def post ( self, message ) :
+
+		print( f"Instance of {self.name}:\n{message}\n\n" )
+
+		return
+
 class SectionBuilder :
 
 	def __init__ ( self, root ) :
@@ -113,6 +129,10 @@ class FileBuilder :
 
 		self.documentation_builder = documentation_builder
 
+		self.debug = self.documentation_builder.debug
+
+		if self.debug : self.debugger = Debugger( self )
+
 		self.source = None
 
 		self.valid_source_suffixes = [ '.md', '.html' ]
@@ -124,8 +144,6 @@ class FileBuilder :
 		self.idiom_tags = []
 
 		language_tags_csv_path = Path(__file__).parent / 'ietf-language-tags.csv'
-
-		assert language_tags_csv_path.exists()
 
 		with open( language_tags_csv_path ) as csvfile:
 
@@ -145,15 +163,25 @@ class FileBuilder :
 
 		self.source = path.resolve()
 
-		if not self.source.suffix in self.valid_source_suffixes : raise Exception( "Invalid source suffix." )
+		if not self.source.suffix in self.valid_source_suffixes : raise Exception( f"File {self.source} has invalid source suffix {self.source.suffix}." )
+
+		if self.debug : self.debugger.post( f"Set file {self.source} as source." )
 
 		self.source_from_root = self.source.relative_to( self.documentation_builder.source )
 
 		self.destination = self.documentation_builder.destination / self.source_from_root.with_suffix( ".html" )
 
-		if self.documentation_builder.replace_spaces_by_dashes : self.destination = Path( str( self.destination ).replace( ' ', '-' ) )
+		if self.debug : self.debugger.post( f"Building as file {self.source}." )
 
-		self.find_idiom()
+		if self.documentation_builder.replace_spaces_by_dashes :
+
+			self.destination = Path( str( self.destination ).replace( ' ', '-' ) )
+
+			if self.debug : self.debugger.post( f"Replaced spaces by dashes. Destination became {self.destination}." )
+
+		self.idiom = self.find_idiom( self.source )
+
+		if self.debug : self.debugger.post( f"Idiom: {self.idiom}" )
 
 		self.root_from_file = self.documentation_builder.destination.relative_to( self.destination.parent, walk_up=True )
 
@@ -161,21 +189,31 @@ class FileBuilder :
 
 		if ( self.documentation_builder.translations != None ) : self.find_translation_group()
 
-		return
-
-	def find_idiom ( self ) :
-
-		for suffix in self.source.suffixes :
-
-			if suffix[1:] in self.idiom_tags : self.idiom = suffix[1:] ; return
-
-		for parent in self.source.parents :
-
-			if parent.name in self.idiom_tags : self.idiom = parent.name ; return
-
-		self.idiom = None
+		if self.debug : self.debugger.post( f"Current file translations: {self.translations}." )
 
 		return
+
+	def find_idiom ( self, file_path ) :
+
+		file_path = Path( file_path )
+
+		idiom = None
+
+		parts = []
+
+		for parent in file_path.parents : parts.append( parent.name )
+
+		for suffix in file_path.suffixes : parts.append( suffix[1:] )
+
+		for part in parts :
+
+			is_tag = part in self.idiom_tags
+
+			if is_tag and ( idiom == None ) : idiom = part
+
+			elif is_tag and ( idiom != part ) : raise Exception()
+
+		return idiom
 
 	def find_translation_group ( self ) :
 
@@ -187,11 +225,11 @@ class FileBuilder :
 
 		for group in translation_groups :
 
-			if ( self.translations != None ) : break
+			if ( self.translations != None ) : print("group"); break
 
 			for file_path in group :
 
-				if ( self.source_from_root.with_suffix('') == Path( file_path ) ) :
+				if str( self.source_from_root ).startswith( file_path ) :
 
 					self.translations = group.copy()
 
@@ -321,17 +359,19 @@ class FileBuilder :
 
 			for translation_path in self.translations :
 
+				if not translation_path.endswith( '.html' ) : translation_path = translation_path + '.html'
+
 				if self.documentation_builder.replace_spaces_by_dashes : translation_path = translation_path.replace( ' ', '-' )
 
-				translation_idiom = str( Path( translation_path ).parents[-2] )
+				translation_idiom = self.find_idiom( translation_path )
 
 				translation_path = self.root_from_file / translation_path
 
-				paragraph = document.new_tag( 'p', href=str( translation_path ) )
+				paragraph = document.new_tag( 'p' )
 
 				div.append( paragraph )
 
-				anchor = document.new_tag( 'a', href=str( translation_path.with_suffix( '.html' ) ) )
+				anchor = document.new_tag( 'a', href=str( translation_path ) )
 
 				anchor.string = str( translation_idiom )
 
@@ -339,7 +379,9 @@ class FileBuilder :
 
 		else :
 
-			paragraph = document.new_tag( "p" ) ; paragraph.string = "No translations for this page."
+			paragraph = document.new_tag( "p" )
+
+			paragraph.string = "No translations for this page."
 
 			div.append( paragraph )
 
@@ -425,16 +467,23 @@ class DocumentationBuilder :
 			'papaya_from_destination',
 			'replace_spaces_by_dashes',
 			'build_selection',
-			'pack'
+			'pack',
+			'redirector_destination',
+			'debug',
+			'debug_for_file'
 		]
 
 		for name in options :
 
 			if name in valid_options : setattr( self, name, options[name] )
 
+		if self.debug : self.debugger = Debugger( self )
+
 		self.source = self.source.resolve()
 
 		self.destination = self.destination.resolve()
+
+		if ( self.redirector_destination == None ) : self.redirector_destination = self.destination / 'index.html'
 
 		model_path = Path( __file__ ).parent / 'model.html'
 
@@ -469,9 +518,43 @@ class DocumentationBuilder :
 
 		return
 
-	def build_selected ( self ) :
+	def build_redirector ( self ) :
 
-		assert ( len( self.selection_to_build ) > 0 ) , 'Nothing specified to build.'
+		entry_points_json = self.source / "entry-points.json"
+
+		entry_points = json.loads( entry_points_json.read_text() )
+
+		if self.debug : self.debugger.post( f"Entry points: {entry_points}." )
+
+		model_redirector = Path(__file__).parent / 'model-redirector.html'
+
+		redirector = BeautifulSoup( model_redirector.read_text(), 'html.parser' )
+
+		main = redirector.find( "main" )
+
+		for entry_point in entry_points :
+
+			#path = self.source / ( entry_point )
+
+			#if not path.is_file() : raise Exception( f"Entry point {entry_point} not file." )
+
+			redirector_to_destinaiton_root = self.destination.relative_to( self.redirector_destination.parent.absolute() )
+
+			destinaiton_root_to_redirected = entry_point + '.html'
+
+			redirector_to_redirected = redirector_to_destinaiton_root / destinaiton_root_to_redirected
+
+			paragraph = redirector.new_tag( "p" )
+
+			paragraph.string = str( redirector_to_redirected )
+
+			main.append( paragraph )
+
+		self.redirector_destination.write_text( redirector.prettify() )
+
+		return
+
+	def build_selected ( self ) :
 
 		for source_file_path in self.selection_to_build :
 
@@ -500,11 +583,7 @@ class DocumentationBuilder :
 				try :
 					self.file_builder.set_source( source_file_path )
 
-				except :
-					continue
-
-				else :
-					pass
+				except : continue
 
 				if not parent_was_relocated : self.file_builder.destination.parent.mkdir( parents=True, exist_ok=True ) ; parent_was_relocated = True ; #print(f"{self.file_builder.destination.parent}")
 
@@ -527,6 +606,8 @@ class DocumentationBuilder :
 		if len( self.selection_to_build ) > 0 : self.build_selected()
 		else : self.build_all()
 
+		self.build_redirector()
+
 		return
 
 if __name__ == '__main__':
@@ -546,6 +627,12 @@ if __name__ == '__main__':
 	option_parser.add_argument( "--replace-spaces-by-dashes", dest='replace_spaces_by_dashes', default=True, action=argparse.BooleanOptionalAction )
 
 	option_parser.add_argument( "--pack", default=False, action=argparse.BooleanOptionalAction )
+
+	option_parser.add_argument( "--redirector", dest='redirector_destination', default=None, type=Path )
+
+	option_parser.add_argument( "--debug", default=False, action=argparse.BooleanOptionalAction )
+
+	option_parser.add_argument( "--debug-for-file", dest='debug_for_file', default=None, type=Path )
 
 	options = option_parser.parse_args()
 

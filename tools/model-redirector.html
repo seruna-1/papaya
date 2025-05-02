@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+
+		<title>Redirector</title>
+
+		<meta charset="UTF-8"/>
+
+		<meta name='viewport' content='initial-scale=1.0'/>
+
+	</head>
+
+	<body>
+
+		<main><p>Redirecting...</p></main>
+
+	</body>
+
+	<script>
+
+		const paragraphs = document.querySelectorAll( "p" )
+
+		for ( paragraph of paragraphs ) {
+
+			let entryPoint = paragraph.textContent
+
+			if ( entryPoint.includes( window.navigator.language ) ) { window.location.replace( entryPoint ) }
+		}
+
+	</script>
+
+</html>

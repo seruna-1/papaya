@@ -26,12 +26,13 @@ class Builder :
 
 		for reference in self.repository.references.iterator() :
 
+			if ( reference.target != self.repository.head.target ) : return None
+
 			maybe_tag = self.repository[ reference.target ]
 
 			if (
 				isinstance( maybe_tag, pygit2.Tag )
 				and maybe_tag.name.startswith( 'version' )
-				and ( reference.target == self.repository.head.target )
 			) : return maybe_tag.name
 
 		return None
