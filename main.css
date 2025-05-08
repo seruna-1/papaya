@@ -260,15 +260,21 @@ input[type="submit"], input[type="reset"], input[type="button"]
 	left: 0px;
 }
 
-#buttonGoTop
-{
-	position: fixed;
-	bottom: 0px;
-	right: 0px;
-}
-
 input.viewSelector
 {
 	font-weight: bold;
 	margin: 0;
+}
+
+@media print
+{
+	img, video
+	{
+		opacity: 1;
+	}
+
+	#buttonShowDialogMain
+	{
+		display: none;
+	}
 }

@@ -267,7 +267,7 @@ class FileBuilder :
 
 		self.destination.write_text( self.document.prettify() )
 
-		if self.documentation_builder.pack : self.pack_external()
+		self.update_references()
 
 		return
 
@@ -391,9 +391,10 @@ class FileBuilder :
 
 		return
 
-	def pack_external ( self ) :
+	def update_references ( self ) :
 
-		packed = self.documentation_builder.packed
+		if self.documentation_builder.pack : packed = self.documentation_builder.packed
+		else : packed = None
 
 		attributes = [ 'href', 'src' ]
 
@@ -411,14 +412,18 @@ class FileBuilder :
 
 			current_location = current_location.absolute()
 
-			if \
+			destination = self.documentation_builder.destination / current_location.relative_to( self.documentation_builder.source )
+
+			if ( packed == None ) :
+				destination.parent.mkdir( parents=True, exist_ok=True )
+
+				os.symlink( current_location, destination )
+
+			elif \
 			(
 				current_location.exists()
 				and current_location not in packed
 			) :
-
-				destination = self.documentation_builder.destination / current_location.relative_to( self.documentation_builder.source )
-
 				if not current_location.is_symlink() :
 
 					destination.parent.mkdir( parents=True, exist_ok=True )
@@ -526,7 +531,8 @@ class DocumentationBuilder :
 
 		entry_points_json = self.source / "entry-points.json"
 
-		entry_points = json.loads( entry_points_json.read_text() )
+		if ( entry_points_json.is_file() ) : entry_points = json.loads( entry_points_json.read_text() )
+		else : return
 
 		if self.debug : self.debugger.post( f"Entry points: {entry_points}." )
 
