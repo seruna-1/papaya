@@ -220,7 +220,7 @@ function enumerateTitles ()
 
 		position[ position.length - 1 ]++;
 
-		title.textContent = position.join( "." ) + " " + title.textContent;
+		title.insertAdjacentHTML( "afterbegin", position.join( "." ) + " " );
 
 		last_level = level
 	}
