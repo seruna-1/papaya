@@ -1,8 +1,7 @@
 @font-face
 {
 	font-family: "Inconsolata";
-	src:
-		url("inconsolata/Inconsolata-Regular.woff2") format("woff2");
+	src: url("inconsolata/Inconsolata-Regular.woff2") format("woff2");
 }
 
 :root, ::backdrop
@@ -132,7 +131,6 @@ img, video
 {
 	width: 100%;
 	display: block;
-	margin-bottom: 2rem;
 }
 
 mark, code, kbd, blockquote > *
@@ -192,12 +190,11 @@ h1, h2, h3, h4, h5, h6
 	font-size: 1.4rem;
 	font-weight: bold;
 	margin: 0;
-	margin-bottom: 1.4em;
 }
 
 section { margin-top: 3rem; }
 
-p, div, li, ul, math { margin-bottom: 1.8em; }
+h1, h2, h3, h4, h5, h6, p, div, li, ul, math, img, video { margin-bottom: 1.5rem; }
 
 :last-child { margin-bottom: 0; }
 
