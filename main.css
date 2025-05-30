@@ -38,15 +38,9 @@
 	--color-border-hover: #bdbdbd;
 }
 
-::backdrop
-{
-	background-color: var( --color-background-faded );
-}
+::backdrop { background-color: var( --color-background-faded ); }
 
-html
-{
-	scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 html, body, :modal
 {
@@ -68,10 +62,7 @@ header
 	text-align: center;
 }
 
-main, header
-{
-	padding: 2rem calc( var(--empty-space-width) / 2 + 0.6rem ); /*Top and bottom, respectively*/
-}
+main, header { padding: 2rem calc( var(--empty-space-width) / 2 + 0.6rem ); }
 
 dialog[open]
 {
@@ -80,7 +71,7 @@ dialog[open]
 	margin-right: auto;
 	margin-top: 2vh;
 	padding: 2vh 0;
-	width: calc( 100vw - var(--empty-space-width) ); /*Top and bottom, respectively*/
+	width: calc( 100vw - var(--empty-space-width) );
 }
 
 ul
@@ -91,16 +82,19 @@ ul
 	border-left-color: var(--color-border);
 }
 
-figure, div, pre
+figure, div, pre, math:not( p > math )
 {
 	padding: 1rem;
-	margin-right: 1rem;
-	margin-left: 1rem;
+	margin-right: auto;
+	margin-left: auto;
 	height: auto;
+	max-width: 90%;
 	border-style: solid;
 	border-width: var(--border-width);
 	border-color: var(--color-border);
 }
+
+p > math { margin: 0; }
 
 section
 {
@@ -110,7 +104,7 @@ section
 	border-left-color: var(--color-border);
 }
 
-div, pre, figcaption
+div, pre, figcaption, math
 {
 	overflow-x: auto;
 	overflow-y: hidden;
@@ -125,15 +119,9 @@ div div
 	border-left-color: var(--color-border);
 }
 
-div:not( .line-break ) *
-{
-	width: fit-content;
-}
+div:not( .line-break ) * { width: fit-content; }
 
-div.line-break
-{
-	text-wrap: auto;
-}
+div.line-break { text-wrap: auto; }
 
 body, main, figure, div, section, p, h1
 {
@@ -143,8 +131,8 @@ body, main, figure, div, section, p, h1
 img, video
 {
 	width: 100%;
-	opacity: 0.8;
 	display: block;
+	margin-bottom: 2rem;
 }
 
 mark, code, kbd, blockquote > *
@@ -153,10 +141,11 @@ mark, code, kbd, blockquote > *
 	background-color: unset;
 }
 
-figcaption
-{
-	color: var(--color-text-shadowed);
-}
+math { font-size: 1.4rem; }
+
+p math { font-size: 1em; }
+
+figcaption { color: var(--color-text-shadowed); }
 
 a, button.link-to-section
 {
@@ -169,10 +158,7 @@ a, button.link-to-section
 	text-decoration: none;
 }
 
-a:hover
-{
-	color: var(--color-clickable-selected);
-}
+a:hover { color: var(--color-clickable-selected); }
 
 div:not(:has(div:hover)):hover
 {
@@ -190,10 +176,7 @@ button:enabled:hover, input[type="submit"]:enabled:hover, input[type="reset"]:en
 	background-color: var(--color-clickable-selected);
 }
 
-hr
-{
-	color: var(--color-border);
-}
+hr { color: var(--color-border); }
 
 h1, h2, h3, h4, h5, h6, p:not( div > p )
 {
@@ -202,45 +185,23 @@ h1, h2, h3, h4, h5, h6, p:not( div > p )
 	margin-top: 0;
 }
 
-div.line-break > p
-{
-	overflow-x: auto;
-}
+div.line-break > p { overflow-x: auto; }
 
 h1, h2, h3, h4, h5, h6
 {
 	font-size: 1.4rem;
 	font-weight: bold;
 	margin: 0;
+	margin-bottom: 1.4em;
 }
 
-section:not( :first-child )
-{
-	margin-top: 3rem;
-}
+section { margin-top: 3rem; }
 
-section > h1, section > h2, section > h3, section > h4, section > h5, section > h6
-{
-	margin-bottom: 1.5em;
-}
+p, div, li, ul, math { margin-bottom: 1.8em; }
 
-p:not( :last-child ),
-div:not( :last-child ),
-li:not( :last-child ),
-ul:not( :last-child )
-{
-	margin-bottom: 2em;
-}
+:last-child { margin-bottom: 0; }
 
-p:last-child
-{
-	margin-bottom: 0;
-}
-
-:first-child
-{
-	margin-top: 0;
-}
+:first-child { margin-top: 0; }
 
 input[type="submit"], input[type="reset"], input[type="button"]
 {
@@ -274,9 +235,9 @@ input.viewSelector
 		--color-clickable-normal: #003cc7;
 	}
 
-	img, video
+	h1, h2, h3, h4, h5, h6, p:not( div > p )
 	{
-		opacity: 1;
+		word-wrap: break-word;
 	}
 
 	#buttonShowDialogMain
