@@ -91,6 +91,7 @@ figure, div, pre, math:not( p > math )
 	border-style: solid;
 	border-width: var(--border-width);
 	border-color: var(--color-border);
+	break-inside: avoid;
 }
 
 p > math { margin: 0; }
@@ -103,7 +104,7 @@ section
 	border-left-color: var(--color-border);
 }
 
-div, pre, figcaption, math
+div, pre, math
 {
 	overflow-x: auto;
 	overflow-y: hidden;
@@ -129,9 +130,12 @@ body, main, figure, div, section, p, h1
 
 img, video
 {
-	width: 100%;
+	max-height: 50vh;
+	max-width: 100%;
 	display: block;
 }
+
+figure { width: fit-content; padding: 0.8rem;}
 
 mark, code, kbd, blockquote > *
 {
@@ -192,7 +196,7 @@ h1, h2, h3, h4, h5, h6
 	margin: 0;
 }
 
-section { margin-top: 3rem; }
+section { margin-top: 3rem; break-after: page; }
 
 h1, h2, h3, h4, h5, h6, p, div, li, ul, math, img, video { margin-bottom: 1.5rem; }
 
