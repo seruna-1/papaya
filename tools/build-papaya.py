@@ -20,6 +20,8 @@ class Builder :
 
 		self.destination_root_path = arguments.destination
 
+		if not self.destination_root_path : self.destination_root_path = self.repository_root_path / 'built'
+
 		return
 
 	def get_tag_name ( self ) :
@@ -51,25 +53,33 @@ class Builder :
 
 		version_file_path.write_text( json.dumps( version_file_content ) + '\n' )
 
-		for repository_directory_path, directory_names, file_names in self.repository_root_path.walk() :
+		files_to_copy = [ 'main.css', 'main.js', 'LICENSE', 'tools/ietf-language-tags.csv', 'tools/model.html', 'tools/model-redirector.html' ]
 
-			directory_path_relative = repository_directory_path.relative_to( self.repository_root_path )
+		for file_path_relative in files_to_copy :
 
-			destination_directory_path = self.destination_root_path / directory_path_relative
+			destination_path = self.destination_root_path / file_path_relative
 
-			for file_name in file_names :
+			destination_path.parent.mkdir( parents=True, exist_ok=True )
 
-				file_path_relative = directory_path_relative / file_name
+			repository_path = self.repository_root_path / file_path_relative
 
-				if str( file_path_relative ) in [ 'main.css', 'main.js', 'LICENSE' ] :
+			shutil.copy( repository_path, destination_path )
 
-					destination_directory_path.mkdir( parents=True, exist_ok=True )
+		scripts_to_binaries = [ 'tools/build-documentation.py', 'tools/build-papaya.py' ]
 
-					repository_file_path = self.repository_root_path / file_path_relative
+		for path_relative in scripts_to_binaries :
 
-					destination_file_path = self.destination_root_path / file_path_relative
+			path_relative = pathlib.Path( path_relative )
 
-					shutil.copy( repository_file_path, destination_file_path )
+			source_path = self.repository_root_path / path_relative
+
+			content_to_write = f'#! /bin/python\n\n{source_path.read_text()}\n'
+
+			destination_path = self.destination_root_path / path_relative.with_suffix('')
+
+			destination_path.write_text( content_to_write )
+
+			destination_path.chmod(0o755)
 
 		return
 
@@ -79,9 +89,7 @@ if __name__ == '__main__':
 
 	option_parser.add_argument( "--repository", type=pathlib.Path )
 
-	option_parser.add_argument( "--destination", required=True, type=pathlib.Path )
-
-	option_parser.add_argument( "--include-tools", default='no' )
+	option_parser.add_argument( "--destination", type=pathlib.Path )
 
 	options = option_parser.parse_args()
 

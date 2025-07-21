@@ -19,13 +19,18 @@
 
 	<script>
 
-		const paragraphs = document.querySelectorAll( "p" )
+  const paragraphs = document.querySelectorAll( "p" )
 
 		for ( paragraph of paragraphs ) {
 
-			let entryPoint = paragraph.textContent
+			let parts = paragraph.textContent.split('.')
 
-			if ( entryPoint.includes( window.navigator.language ) ) { window.location.replace( entryPoint ) }
+			for (part of parts) {
+
+				let found = part.startsWith(window.navigator.language) || window.navigator.language.startsWith(part)
+
+				if (found) { window.location.replace( paragraph.textContent ) }
+			}
 		}
 
 	</script>

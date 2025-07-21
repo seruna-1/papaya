@@ -552,6 +552,8 @@ class DocumentationBuilder :
 
 			destinaiton_root_to_redirected = entry_point + '.html'
 
+			if self.replace_spaces_by_dashes : destinaiton_root_to_redirected = destinaiton_root_to_redirected.replace( " ", "-" )
+
 			redirector_to_redirected = redirector_to_destinaiton_root / destinaiton_root_to_redirected
 
 			paragraph = redirector.new_tag( "p" )
