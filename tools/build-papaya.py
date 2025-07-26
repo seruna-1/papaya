@@ -53,7 +53,7 @@ class Builder :
 
 		version_file_path.write_text( json.dumps( version_file_content ) + '\n' )
 
-		files_to_copy = [ 'main.css', 'main.js', 'LICENSE', 'tools/ietf-language-tags.csv', 'tools/model.html', 'tools/model-redirector.html' ]
+		files_to_copy = [ 'main.css', 'main.js', 'LICENSE', 'tools/ietf-language-tags.csv', 'tools/model.html', 'tools/model-redirector.html', 'inconsolata/Inconsolata-Regular.woff2' ]
 
 		for file_path_relative in files_to_copy :
 
