@@ -173,9 +173,17 @@ section:not(:has(section:hover)):hover, ul:not(:has(ul:hover)):hover
 	border-color: var(--color-border-hover);
 }
 
-button:enabled:hover, input[type="submit"]:enabled:hover, input[type="reset"]:enabled:hover, input[type="button"]:enabled:hover
+@keyframes selectionColorChange
 {
-	background-color: var(--color-clickable-selected);
+	0% { background-color: var(--color-clickable-normal); }
+	50% { background-color: var(--color-clickable-selected); }
+	100% { background-color: var(--color-clickable-normal); }
+}
+
+button:enabled:hover, input[type="submit"]:enabled:hover, input[type="reset"]:enabled:hover, input[type="button"]:enabled:hover,
+button:enabled:focus, input[type="submit"]:enabled:focus, input[type="reset"]:enabled:focus, input[type="button"]:enabled:focus
+{
+	animation: selectionColorChange 1.8s infinite;
 }
 
 hr { color: var(--color-border); }
